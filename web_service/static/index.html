@@ -98,7 +98,7 @@
                         const li = document.createElement("li");
                         li.innerHTML = `
                             <input type="checkbox" class="cache-checkbox" value="${item.key}">
-                            <a href="/download/${item.key}" target="_blank">${item.key}</a> - ${item.date} - 
+                            <a href="/${currentPath}/download/${item.key}" target="_blank">${item.key}</a> - ${item.date} - 
                             <span title="${item.source}">${shortSource}</span>
                         `;
                         if (index === 0) {
