@@ -24,7 +24,7 @@
             <input type="file" id="configFile" name="config_file">
         </div><br>
 
-        <button type="button" onclick="submitForm()">Extract Config</button>
+        <button type="button" onclick="submitForm()">解析</button>
     </form>
 
     <!-- 进度条显示 -->
@@ -32,6 +32,10 @@
         <p id="progressStatus">Status: </p>
         <progress id="progressBar" value="0" max="100" style="width: 100%;"></progress>
     </div>
+
+    <!-- 缓存文件列表 -->
+    <h2>缓存文件列表</h2>
+    <ul id="cacheList"></ul>
 
     <script>
         document.getElementById("configSource").addEventListener("change", function() {
@@ -47,11 +51,13 @@
                 method: "POST",
                 body: formData
             })
-            .then(response => {
-                if (response.ok) {
+            .then(response => response.json())
+            .then(data => {
+                if (data.new_file) {
                     checkProgress();
                 } else {
-                    throw new Error("Failed to start file upload");
+                    alert("文件已处理，刷新缓存列表！");
+                    loadCacheList();
                 }
             })
             .catch(error => {
@@ -59,7 +65,6 @@
             });
         }
 
-        // 轮询后端进度
         function checkProgress() {
             fetch("/progress")
                 .then(response => response.json())
@@ -67,11 +72,10 @@
                     document.getElementById("progressStatus").textContent = `Status: ${data.status}`;
                     document.getElementById("progressBar").value = data.percent;
 
-                    // 如果未完成，继续轮询
                     if (data.percent < 100) {
                         setTimeout(checkProgress, 500);
                     } else {
-                        downloadResult();  // 进度达到100%后自动下载
+                        loadCacheList();
                     }
                 })
                 .catch(error => {
@@ -79,23 +83,24 @@
                 });
         }
 
-        // 下载结果文件
-        function downloadResult() {
-            fetch("/download")
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "optimized_config.yaml";
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                })
-                .catch(error => {
-                    console.error("Error downloading file:", error);
+        function loadCacheList() {
+            fetch("/cache-list")
+                .then(response => response.json())
+                .then(cacheList => {
+                    const cacheListEl = document.getElementById("cacheList");
+                    cacheListEl.innerHTML = "";
+                    cacheList.forEach((item, index) => {
+                        const li = document.createElement("li");
+                        li.innerHTML = `<a href="/download/${item.key}" target="_blank">${item.key}</a> - ${item.date}`;
+                        if (index === 0) {
+                            li.innerHTML += " <span style='color:red;'>NEW</span>";
+                        }
+                        cacheListEl.appendChild(li);
+                    });
                 });
         }
+
+        loadCacheList();  // 初始化加载缓存文件列表
     </script>
 </body>
 </html>

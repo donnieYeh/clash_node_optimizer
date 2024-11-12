@@ -1,6 +1,6 @@
 .venv/
 __pycache__
-config.new.yaml
-config.yaml
+*.yaml
 clash_node_optimizer.egg-info/
 .vscode/
+web_service/cache/*
