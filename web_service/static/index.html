@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Config Optimizer</title>
+</head>
+<body>
+    <h1>Clash Config Optimizer</h1>
+    <form id="configForm">
+        <label for="configSource">Config Source:</label>
+        <select id="configSource" name="config_source">
+            <option value="url">URL</option>
+            <option value="file">File</option>
+        </select><br><br>
+
+        <div id="urlInput">
+            <label for="configUrl">Config URL:</label>
+            <input type="text" id="configUrl" name="config_url">
+        </div>
+
+        <div id="fileInput" style="display: none;">
+            <label for="configFile">Upload File:</label>
+            <input type="file" id="configFile" name="config_file">
+        </div><br>
+
+        <button type="button" onclick="submitForm()">Extract Config</button>
+    </form>
+
+    <!-- 进度条显示 -->
+    <div id="progressContainer" style="display: none; margin-top: 20px;">
+        <p id="progressStatus">Status: </p>
+        <progress id="progressBar" value="0" max="100" style="width: 100%;"></progress>
+    </div>
+
+    <script>
+        document.getElementById("configSource").addEventListener("change", function() {
+            const source = this.value;
+            document.getElementById("urlInput").style.display = source === "url" ? "block" : "none";
+            document.getElementById("fileInput").style.display = source === "file" ? "block" : "none";
+        });
+
+        function submitForm() {
+            const formData = new FormData(document.getElementById("configForm"));
+            document.getElementById("progressContainer").style.display = "block";
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    checkProgress();
+                } else {
+                    throw new Error("Failed to start file upload");
+                }
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+        }
+
+        // 轮询后端进度
+        function checkProgress() {
+            fetch("/progress")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("progressStatus").textContent = `Status: ${data.status}`;
+                    document.getElementById("progressBar").value = data.percent;
+
+                    // 如果未完成，继续轮询
+                    if (data.percent < 100) {
+                        setTimeout(checkProgress, 500);
+                    } else {
+                        downloadResult();  // 进度达到100%后自动下载
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching progress:", error);
+                });
+        }
+
+        // 下载结果文件
+        function downloadResult() {
+            fetch("/download")
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "optimized_config.yaml";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                })
+                .catch(error => {
+                    console.error("Error downloading file:", error);
+                });
+        }
+    </script>
+</body>
+</html>
