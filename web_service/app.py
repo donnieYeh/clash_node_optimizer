@@ -1,3 +1,4 @@
+import configparser
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from clash_node_optimizer.main import process_config
 import os
@@ -7,6 +8,12 @@ import threading
 import hashlib
 import json
 from datetime import datetime
+
+# 读取配置文件
+config = configparser.ConfigParser()
+PROPERTIES_DIR = os.path.join(os.path.dirname(__file__), 'config.properties')
+config.read(PROPERTIES_DIR)
+port = int(config.get("DEFAULT", "web_service_port", fallback="5000"))
 
 app = Flask(__name__, static_folder="static")
 
@@ -191,4 +198,4 @@ def delete_cache():
     return jsonify({"success": True, "deleted_keys": deleted_keys})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=port)
