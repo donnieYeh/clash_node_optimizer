@@ -40,6 +40,8 @@
     <ul id="cacheList"></ul>
 
     <script>
+        let currentPath = window.location.pathname === "/" ? "" : window.location.pathname;
+
         document.getElementById("configSource").addEventListener("change", function() {
             const source = this.value;
             document.getElementById("urlInput").style.display = source === "url" ? "block" : "none";
@@ -49,7 +51,7 @@
         function submitForm() {
             const formData = new FormData(document.getElementById("configForm"));
             document.getElementById("progressContainer").style.display = "block";
-            fetch("/upload", {
+            fetch( currentPath + "/upload", {
                 method: "POST",
                 body: formData
             })
@@ -68,7 +70,7 @@
         }
 
         function checkProgress() {
-            fetch("/progress")
+            fetch( currentPath + "/progress")
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById("progressStatus").textContent = `Status: ${data.status}`;
@@ -86,7 +88,7 @@
         }
 
         function loadCacheList() {
-            fetch("/cache-list")
+            fetch( currentPath + "/cache-list")
                 .then(response => response.json())
                 .then(cacheList => {
                     const cacheListEl = document.getElementById("cacheList");
@@ -125,7 +127,7 @@
                 return;
             }
 
-            fetch("/delete-cache", {
+            fetch( currentPath + "/delete-cache", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
