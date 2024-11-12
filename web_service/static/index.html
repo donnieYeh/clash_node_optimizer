@@ -56,8 +56,8 @@
                 if (data.new_file) {
                     checkProgress();
                 } else {
-                    alert("文件已处理，刷新缓存列表！");
-                    loadCacheList();
+                    document.getElementById("progressContainer").style.display = "none";
+                    loadCacheList();  // 刷新缓存列表
                 }
             })
             .catch(error => {
@@ -90,8 +90,12 @@
                     const cacheListEl = document.getElementById("cacheList");
                     cacheListEl.innerHTML = "";
                     cacheList.forEach((item, index) => {
+                        const shortSource = item.source.length > 20 ? item.source.slice(0, 20) + "..." : item.source;
                         const li = document.createElement("li");
-                        li.innerHTML = `<a href="/download/${item.key}" target="_blank">${item.key}</a> - ${item.date}`;
+                        li.innerHTML = `
+                            <a href="/download/${item.key}" target="_blank">${item.key}</a> - ${item.date} - 
+                            <span title="${item.source}">${shortSource}</span>
+                        `;
                         if (index === 0) {
                             li.innerHTML += " <span style='color:red;'>NEW</span>";
                         }

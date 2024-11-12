@@ -31,17 +31,30 @@ def get_cached_file(file_key: str) -> str:
     cached_path = os.path.join(CACHE_DIR, f"{file_key}.yaml")
     return cached_path if os.path.exists(cached_path) else None
 
-def save_cache_info(file_key: str, file_path: str):
+def save_cache_info(file_key: str, file_path: str, source: str):
     """
     保存缓存文件的信息到缓存目录
     """
     cache_info = {
         "key": file_key,
         "path": file_path,
+        "source": source,  # 数据来源
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-    with open(os.path.join(CACHE_DIR, "cache_info.json"), "a") as f:
-        f.write(json.dumps(cache_info) + "\n")
+    
+    # 读取现有缓存信息
+    cache_file_path = os.path.join(CACHE_DIR, "cache_info.json")
+    cache_list = []
+    if os.path.exists(cache_file_path):
+        with open(cache_file_path, "r") as f:
+            cache_list = json.load(f)
+    
+    # 添加新缓存项
+    cache_list.append(cache_info)
+    
+    # 写回到 JSON 文件
+    with open(cache_file_path, "w") as f:
+        json.dump(cache_list, f, indent=4)
 
 @app.route('/')
 def index():
@@ -66,11 +79,13 @@ def upload():
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch the file from URL"}), 400
         file_content = response.content
+        source = config_url  # 数据来源为 URL
     elif config_source == "file":
         config_file = request.files.get('config_file')
         if not config_file:
             return jsonify({"error": "File is required"}), 400
         file_content = config_file.read()
+        source = config_file.filename  # 数据来源为文件名
     else:
         return jsonify({"error": "Invalid config source"}), 400
 
@@ -102,7 +117,7 @@ def upload():
             progress["status"] = "Completed"
             progress["percent"] = 100
 
-            save_cache_info(file_key, output_filename)  # 记录缓存信息
+            save_cache_info(file_key, output_filename, source)  # 记录缓存信息
         except Exception as e:
             progress["status"] = f"Error: {str(e)}"
         finally:
@@ -129,8 +144,7 @@ def list_cache():
     cache_file_path = os.path.join(CACHE_DIR, "cache_info.json")
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "r") as f:
-            for line in f:
-                cache_list.append(json.loads(line))
+            cache_list = json.load(f)
     # 按日期倒序排序
     cache_list.sort(key=lambda x: x["date"], reverse=True)
     return jsonify(cache_list)
