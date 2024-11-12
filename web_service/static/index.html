@@ -33,8 +33,10 @@
         <progress id="progressBar" value="0" max="100" style="width: 100%;"></progress>
     </div>
 
-    <!-- 缓存文件列表 -->
+    <!-- 缓存文件列表，全选和删除按钮 -->
     <h2>缓存文件列表</h2>
+    <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)"> 全选
+    <button type="button" onclick="deleteSelectedCaches()">删除选中缓存</button>
     <ul id="cacheList"></ul>
 
     <script>
@@ -93,6 +95,7 @@
                         const shortSource = item.source.length > 20 ? item.source.slice(0, 20) + "..." : item.source;
                         const li = document.createElement("li");
                         li.innerHTML = `
+                            <input type="checkbox" class="cache-checkbox" value="${item.key}">
                             <a href="/download/${item.key}" target="_blank">${item.key}</a> - ${item.date} - 
                             <span title="${item.source}">${shortSource}</span>
                         `;
@@ -102,6 +105,45 @@
                         cacheListEl.appendChild(li);
                     });
                 });
+        }
+
+        function toggleSelectAll(selectAllCheckbox) {
+            const checkboxes = document.querySelectorAll('.cache-checkbox');
+            checkboxes.forEach(checkbox => checkbox.checked = selectAllCheckbox.checked);
+        }
+
+        function deleteSelectedCaches() {
+            const selectedKeys = Array.from(document.querySelectorAll('.cache-checkbox:checked'))
+                                     .map(checkbox => checkbox.value);
+
+            if (selectedKeys.length === 0) {
+                alert("请至少选择一个缓存文件来删除。");
+                return;
+            }
+
+            if (!confirm("确认删除所选缓存文件吗？此操作不可恢复。")) {
+                return;
+            }
+
+            fetch("/delete-cache", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ keys: selectedKeys })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("选中缓存文件已成功删除！");
+                    loadCacheList();
+                } else {
+                    alert("删除失败：" + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error deleting caches:", error);
+            });
         }
 
         loadCacheList();  // 初始化加载缓存文件列表

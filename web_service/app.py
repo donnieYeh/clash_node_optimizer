@@ -160,5 +160,35 @@ def download_cached_file(file_key):
     else:
         return jsonify({"error": "File not available"}), 404
 
+@app.route('/delete-cache', methods=['POST'])
+def delete_cache():
+    data = request.get_json()
+    keys = data.get("keys", [])
+
+    deleted_keys = []
+    for key in keys:
+        # 生成缓存文件路径并验证是否位于CACHE_DIR内
+        cache_file_path = os.path.join(CACHE_DIR, f"{key}.yaml")
+        if os.path.commonpath([CACHE_DIR, cache_file_path]) != CACHE_DIR:
+            continue  # 跳过不在CACHE_DIR目录内的路径
+
+        if os.path.exists(cache_file_path):
+            os.remove(cache_file_path)
+            deleted_keys.append(key)
+
+    # 更新缓存列表
+    cache_info_path = os.path.join(CACHE_DIR, "cache_info.json")
+    if os.path.exists(cache_info_path):
+        with open(cache_info_path, "r") as f:
+            cache_list = json.load(f)
+
+        # 过滤掉被删除的文件
+        cache_list = [item for item in cache_list if item["key"] not in deleted_keys]
+
+        with open(cache_info_path, "w") as f:
+            json.dump(cache_list, f, indent=4)
+
+    return jsonify({"success": True, "deleted_keys": deleted_keys})
+
 if __name__ == '__main__':
     app.run(debug=True)
