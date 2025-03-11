@@ -1,6 +1,12 @@
 import configparser
 from flask import Blueprint, Flask, request, jsonify, send_file, send_from_directory
-from clash_node_optimizer.main import process_config
+
+import sys
+# 计算项目的根目录路径
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)  # 添加根目录到 sys.path
+
+from clash_node_optimizer import process_config
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 import requests
@@ -127,8 +133,12 @@ def upload():
     def process_and_cache_file():
         global progress
         try:
+            progress["status"] = "wait latency test finish"
+            progress["percent"] = 30
+            # 直到latencyTestResults非NONE时，才推进进度
+
             progress["status"] = "Processing configuration"
-            progress["percent"] = 50
+            progress["percent"] = 60
 
             process_config(temp_filename, output_filename)  # 确保文件保存到 cache 目录
 
